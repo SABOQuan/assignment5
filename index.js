@@ -1,30 +1,41 @@
 const express = require("express");
+const mongoose = require("mongoose");
+
 const app = express();
 app.use(express.json());
 
-const employees = {
-  1: {
-    id: 1,
-    name: "Gojo Satoru",
-    position: "Software Eng.",
-    department: "Engineering",
-  },
-  2: {
-    id: 2,
-    name: "Geto Suguru",
-    position: "Manager",
-    department: "Management",
-  },
+// Mongoose schema for employee data
+const employeeSchema = new mongoose.Schema({
+  name: String,
+  position: String,
+  department: String,
+});
 
-  2: {
-    id: 3,
-    name: "Itadori Yuji",
-    position: "Janitar",
-    department: "Janitar",
-  }
+// Mongoose model based on the schema
+const Employee = mongoose.model("Employee", employeeSchema);
+
+mongoose.connect("mongodb://127.0.0.1:27017/Assignment5B")
+  .then(async () => {
+    console.log("Connection to Mongo Created");
+    
+    const initialEmployee = new Employee({
+        name: "Sara Saleem",
+        position: "Graphic Designer",
+        department: "Design",
+      }
+      );
   
-};
+      await initialEmployee.save();
+  
+     
+      console.log("Initial employee added to the database");
+  })
+  .catch(err => {
+    console.log("Error connecting");
+    console.log(err);
+  });
 
+// Your existing routes adapted for Mongoose
 app.get("/", function (req, res) {
   res.send("Hello World");
 });
@@ -33,49 +44,74 @@ app.get("/api/search", function (req, res) {
   res.send("API Search");
 });
 
-app.get("/api/employees", function (req, res) {
-  res.send(Object.values(employees));
+app.get("/api/employees", async function (req, res) {
+  try {
+    const employees = await Employee.find();
+    res.send(employees);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-app.get("/api/employees/:id", function (req, res) {
-  const employee = employees[req.params.id];
-  if (!employee) return res.status(400).send("Employee not found");
-  res.send(employee);
+app.get("/api/employees/:id", async function (req, res) {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) return res.status(400).send("Employee not found");
+    res.send(employee);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-app.put("/api/employees/:id", function (req, res) {
-  const employee = employees[req.params.id];
-  if (!employee) return res.status(400).send("Employee not found");
+app.put("/api/employees/:id", async function (req, res) {
+  try {
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+        position: req.body.position,
+        department: req.body.department,
+      },
+      { new: true }
+    );
 
-  
-  employee.name = req.body.name;
-  employee.position = req.body.position;
-  employee.department = req.body.department;
+    if (!employee) return res.status(400).send("Employee not found");
 
-  res.send(employee);
+    res.send(employee);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-app.delete("/api/employees/:id", function (req, res) {
-  if (!employees[req.params.id]) return res.status(400).send("Employee not found");
-  delete employees[req.params.id];
-  res.send(Object.values(employees));
+app.delete("/api/employees/:id", async function (req, res) {
+  try {
+    const deletedEmployee = await Employee.findByIdAndRemove(req.params.id);
+
+    if (!deletedEmployee) return res.status(400).send("Employee not found");
+
+    const employees = await Employee.find();
+    res.send(employees);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
-app.post("/api/employees", function (req, res) {
-  const newEmployeeId = Object.keys(employees).length + 1;
+app.post("/api/employees", async function (req, res) {
+  try {
+    const newEmployee = new Employee({
+      name: req.body.name,
+      position: req.body.position,
+      department: req.body.department,
+    });
 
-  const newEmployee = {
-    id: newEmployeeId,
-    name: req.body.name,
-    position: req.body.position,
-    department: req.body.department,
-  };
+    await newEmployee.save();
 
-  employees[newEmployeeId] = newEmployee;
-
-  res.send(newEmployee);
+    res.send(newEmployee);
+  } catch (error) {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.listen(5500, () => {
-  console.log("Server is running on port 3000");
+  console.log("Server is running on port 5500");
 });

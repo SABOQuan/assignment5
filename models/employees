@@ -1,0 +1,10 @@
+const mongoose= require("mongoose");
+
+const empSchema= mongoose.Schema({
+    name: String,
+    age: Number,
+});
+
+const empModel= mongoose.model("Employee", empSchema);
+
+module.exports= empModel;

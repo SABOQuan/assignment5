@@ -1,0 +1,19 @@
+const { get } = require("http");
+const empModel= require("./models/employees");
+
+const listEmp= async (name, age)=> {
+    console.log("List Employees");
+    var employee= new empModel();
+    employee.name= name;
+    employee.age=age;
+    await employee.save();
+    return employee;
+}
+
+const getEmp= async() => {
+    var employee= await empModel.find();
+    return employee;
+}
+
+module.exports.listEmp= listEmp;
+module.exports.getEmp= getEmp;
